@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O2 -std=c99
+CFLAGS = -Os -std=c99
 
 all: clean
 	@for file in *.c; do ${CC} ${CFLAGS} -o `echo $$file | cut -d. -f1`.test $$file; done

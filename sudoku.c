@@ -29,20 +29,20 @@ void sudoku_erase(sudoku *s, int row, int column) {
   if (val != 0) {
     s->inserted--;
   }
-  s->box[row][column].number = 0;
-  s->rule_row[row][val] = 0;
-  s->rule_column[column][val] = 0;
+  s->box[row][column].number                  = 0;
+  s->rule_row[row][val]                       = 0;
+  s->rule_column[column][val]                 = 0;
   s->rule_cell[s->box[row][column].cell][val] = 0;
 }
 
 void sudoku_set(sudoku *s, int row, int column, int val) {
   s->box[row][column].number = val;
   s->box[row][column].column = column;
-  s->box[row][column].row = row;
-  s->box[row][column].cell = row / SQRT_CELL * SQRT_CELL + column / SQRT_CELL;
+  s->box[row][column].row    = row;
+  s->box[row][column].cell   = row / SQRT_CELL * SQRT_CELL + column / SQRT_CELL;
 
-  s->rule_row[row][val] = 0;
-  s->rule_column[column][val] = 0;
+  s->rule_row[row][val]                       = 0;
+  s->rule_column[column][val]                 = 0;
   s->rule_cell[s->box[row][column].cell][val] = 0;
 
   if (val == 0) {
@@ -50,15 +50,14 @@ void sudoku_set(sudoku *s, int row, int column, int val) {
   }
 
   s->inserted++;
-  s->rule_row[s->box[row][column].row][val] = 1;
-  s->rule_cell[s->box[row][column].cell][val] = 1;
+  s->rule_row[s->box[row][column].row][val]       = 1;
+  s->rule_cell[s->box[row][column].cell][val]     = 1;
   s->rule_column[s->box[row][column].column][val] = 1;
 }
 
-void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites,
-                        int *poss_count) {
+void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites, int *poss_count) {
   int rule_poss[N + 1] = {0};
-  *poss_count = 0;
+  *poss_count          = 0;
   for (int rule = 0; rule < N + 1; rule++) {
     if (s->rule_row[row][rule] == 1) {
       rule_poss[rule] = 1;
@@ -82,16 +81,15 @@ void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites,
   }
 }
 
-void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites,
-                          int *poss_count) {
+void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites, int *poss_count) {
   int min = N + 1;
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       if (s->box[i][j].number == 0) {
         sudoku_get_rule_at(s, i, j, possibilites, poss_count);
         if (*poss_count < min) {
-          min = *poss_count;
-          *row = i;
+          min     = *poss_count;
+          *row    = i;
           *column = j;
         }
       }
@@ -103,7 +101,7 @@ void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites,
 void sudoku_input(sudoku *s) {
   s->inserted = 0;
   for (int i = 0; i < N * N; i++) {
-    int row = i / N;
+    int row    = i / N;
     int column = i % N;
 
     auto char c = getchar();
@@ -151,9 +149,9 @@ int main(int argc, char const *argv[]) {
     s.inserted = 0;
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < N + 1; j++) {
-        s.rule_row[i][j] = 0;
+        s.rule_row[i][j]    = 0;
         s.rule_column[i][j] = 0;
-        s.rule_cell[i][j] = 0;
+        s.rule_cell[i][j]   = 0;
       }
     }
     sudoku_input(&s);
