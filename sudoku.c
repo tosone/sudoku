@@ -1,9 +1,16 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define SQRT_CELL 3
 #define N (SQRT_CELL * SQRT_CELL)
+
+#ifdef CLOCK_PROCESS_CPUTIME_ID
+#define CLOCKTYPE CLOCK_PROCESS_CPUTIME_ID
+#else
+#define CLOCKTYPE CLOCK_MONOTONIC
+#endif
 
 typedef struct {
   int number;
@@ -144,7 +151,10 @@ bool solve(sudoku *s) {
 }
 
 int main(int argc, char const *argv[]) {
+  struct timespec tsi, tsf;
+
   for (;;) {
+    clock_gettime(CLOCKTYPE, &tsi);
     sudoku s;
     s.inserted = 0;
     for (int i = 0; i < N; i++) {
@@ -172,6 +182,12 @@ int main(int argc, char const *argv[]) {
       printf("%s\n", "No answer!");
     }
     printf("\n");
+
+    clock_gettime(CLOCKTYPE, &tsf);
+    double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
+    long elaps_ns  = tsf.tv_nsec - tsi.tv_nsec;
+
+    fprintf(stderr, "resolve cost CPU time: %lf\n", elaps_s + ((double)elaps_ns) / 1.0e9);
   }
   return 0;
 }
