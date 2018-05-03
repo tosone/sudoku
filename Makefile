@@ -1,11 +1,13 @@
-CC = gcc
-CFLAGS = -Os -std=c99
+CC      = gcc
+CFLAGS  = -Os -std=c11
+LDFLAGS = -D_POSIX_C_SOURCE=199309L
+Target  = $(shell basename $(abspath $(dir $$PWD)))
 
 all: clean
-	@for file in *.c; do ${CC} ${CFLAGS} -o `echo $$file | cut -d. -f1`.test $$file; done
+	${CC} ${CFLAGS} ${LDFLAGS} -o ${Target}.test ${Target}.c
 
 clean:
-	@for file in *.c; do if [[ -f `echo $$file | cut -d. -f1`.test ]]; then rm `echo $$file | cut -d. -f1`.test; fi done
+	${RM} *.test
 
 test:
-	cat puzzles.txt | ./sudoku.test
+	cat puzzles.txt | ./${Target}.test
