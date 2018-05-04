@@ -1,10 +1,19 @@
+#include <curses.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #define SQRT_CELL 3
 #define N (SQRT_CELL * SQRT_CELL)
+
+WINDOW *win;
+WINDOW *infowin;
+
+int backtrace = 0;
+bool verbose  = false;
 
 #ifdef CLOCK_PROCESS_CPUTIME_ID
 #define CLOCKTYPE CLOCK_PROCESS_CPUTIME_ID
@@ -17,10 +26,10 @@ typedef struct {
   int column;
   int row;
   int cell;
-} box;
+} sudoku_box;
 
 typedef struct {
-  box box[N][N];
+  sudoku_box sudoku_box[N][N];
   int inserted;
   int rule_column[N][N + 1];
   int rule_row[N][N + 1];
@@ -28,38 +37,38 @@ typedef struct {
 } sudoku;
 
 int sudoku_get(sudoku const s, int row, int column) {
-  return s.box[row][column].number;
+  return s.sudoku_box[row][column].number;
 }
 
 void sudoku_erase(sudoku *s, int row, int column) {
-  int val = s->box[row][column].number;
+  int val = s->sudoku_box[row][column].number;
   if (val != 0) {
     s->inserted--;
   }
-  s->box[row][column].number                  = 0;
-  s->rule_row[row][val]                       = 0;
-  s->rule_column[column][val]                 = 0;
-  s->rule_cell[s->box[row][column].cell][val] = 0;
+  s->sudoku_box[row][column].number                  = 0;
+  s->rule_row[row][val]                              = 0;
+  s->rule_column[column][val]                        = 0;
+  s->rule_cell[s->sudoku_box[row][column].cell][val] = 0;
 }
 
 void sudoku_set(sudoku *s, int row, int column, int val) {
-  s->box[row][column].number = val;
-  s->box[row][column].column = column;
-  s->box[row][column].row    = row;
-  s->box[row][column].cell   = row / SQRT_CELL * SQRT_CELL + column / SQRT_CELL;
+  s->sudoku_box[row][column].number = val;
+  s->sudoku_box[row][column].column = column;
+  s->sudoku_box[row][column].row    = row;
+  s->sudoku_box[row][column].cell   = row / SQRT_CELL * SQRT_CELL + column / SQRT_CELL;
 
-  s->rule_row[row][val]                       = 0;
-  s->rule_column[column][val]                 = 0;
-  s->rule_cell[s->box[row][column].cell][val] = 0;
+  s->rule_row[row][val]                              = 0;
+  s->rule_column[column][val]                        = 0;
+  s->rule_cell[s->sudoku_box[row][column].cell][val] = 0;
 
   if (val == 0) {
     return;
   }
 
   s->inserted++;
-  s->rule_row[s->box[row][column].row][val]       = 1;
-  s->rule_cell[s->box[row][column].cell][val]     = 1;
-  s->rule_column[s->box[row][column].column][val] = 1;
+  s->rule_row[s->sudoku_box[row][column].row][val]       = 1;
+  s->rule_cell[s->sudoku_box[row][column].cell][val]     = 1;
+  s->rule_column[s->sudoku_box[row][column].column][val] = 1;
 }
 
 void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites, int *poss_count) {
@@ -76,7 +85,7 @@ void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites, int 
     }
   }
   for (int rule = 0; rule < N + 1; rule++) {
-    if (s->rule_cell[s->box[row][column].cell][rule] == 1) {
+    if (s->rule_cell[s->sudoku_box[row][column].cell][rule] == 1) {
       rule_poss[rule] = 1;
     }
   }
@@ -92,7 +101,7 @@ void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites, 
   int min = N + 1;
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
-      if (s->box[i][j].number == 0) {
+      if (s->sudoku_box[i][j].number == 0) {
         sudoku_get_rule_at(s, i, j, possibilites, poss_count);
         if (*poss_count < min) {
           min     = *poss_count;
@@ -125,6 +134,70 @@ void sudoku_input(sudoku *s) {
   return;
 }
 
+void print_sudoku(sudoku *s) {
+  for (int i = 0; i < 19; i++) {
+    for (int j = 0; j < 37; j++) {
+      if (i % 2 == 0) {
+        if (i % 6 == 0) {
+          wattron(win, A_BOLD | COLOR_PAIR(2));
+          if (j % 4 != 0) {
+            wprintw(win, "-");
+          } else {
+            wprintw(win, "+");
+          }
+        } else {
+          if (j % 4 != 0) {
+            wattron(win, COLOR_PAIR(1));
+            wprintw(win, "-");
+          } else {
+            if (j % 12 == 0) {
+              wattron(win, COLOR_PAIR(2));
+            } else {
+              wattron(win, COLOR_PAIR(1));
+            }
+            wprintw(win, "+");
+          }
+        }
+      } else {
+        if (j % 4 == 2) {
+          wattron(win, COLOR_PAIR(4));
+          if (s->sudoku_box[i / 2][j / 4].number == 0) {
+            wprintw(win, " "); // specified num
+          } else {
+            wprintw(win, "%d", s->sudoku_box[i / 2][j / 4].number); // specified num
+          }
+        } else if (j % 4 == 0) {
+          if (j == 0 || j == 36) {
+            wattron(win, A_BOLD | COLOR_PAIR(2));
+          } else if (j % 12 == 0) {
+            wattron(win, A_BOLD | COLOR_PAIR(2));
+          } else {
+            wattron(win, A_BOLD | COLOR_PAIR(1));
+          }
+          wprintw(win, "|");
+        } else {
+          wprintw(win, " ");
+        }
+      }
+    }
+  }
+  wrefresh(win);
+}
+
+void print_sudoku_raw(sudoku *s) {
+  for (int i = 0; i < N * N; i++) {
+    printf("%d", s->sudoku_box[i / 9][i % 9].number);
+  }
+  printf("\n");
+}
+
+void sleep_ms(int ms) {
+  struct timespec tim, tim2;
+  tim.tv_sec  = 0;
+  tim.tv_nsec = ms * 1000000L;
+  nanosleep(&tim, &tim2);
+}
+
 bool solve(sudoku *s) {
   if (s->inserted == N * N) {
     return true;
@@ -140,9 +213,20 @@ bool solve(sudoku *s) {
   bool found_solution;
   for (int i = 0; i < poss_count; i++) {
     sudoku_set(s, row, column, possibilities[i]);
+    if (verbose) {
+      wclear(win);
+      print_sudoku(s);
+      sleep_ms(80);
+    }
     found_solution = solve(s);
     if (found_solution == 1) {
       break;
+    }
+    backtrace++;
+    if (verbose) {
+      wclear(infowin);
+      wprintw(infowin, "backtrace: %d", backtrace);
+      wrefresh(infowin);
     }
     sudoku_erase(s, row, column);
   }
@@ -150,13 +234,47 @@ bool solve(sudoku *s) {
   return found_solution;
 }
 
-int main(int argc, char const *argv[]) {
-  printf("gcc version: %s\n", __VERSION__);
+static void cleanup(void) {
+  endwin();
+}
+
+int main(int argc, char *argv[]) {
+  int opt;
+  while ((opt = getopt(argc, argv, "v")) != -1) {
+    if (opt == 118) {
+      verbose = true;
+    }
+  }
+
+  if (verbose) {
+    initscr();
+    atexit(cleanup);
+    start_color();
+    init_pair(1, COLOR_GREEN, COLOR_BLACK);
+    init_pair(2, COLOR_BLUE, COLOR_BLACK);
+    init_pair(3, COLOR_CYAN, COLOR_BLACK);
+    init_pair(4, COLOR_WHITE, COLOR_BLACK);
+
+    WINDOW *verwin = newwin(2, 37, 1, 3);
+    win            = newwin(19, 37, 3, 3);
+    infowin        = newwin(2, 37, 23, 3);
+
+    refresh();
+    wrefresh(verwin);
+    wrefresh(win);
+    wrefresh(infowin);
+
+    wclear(win);
+
+    wprintw(verwin, "            sudoku solver");
+    wrefresh(verwin);
+  }
 
   struct timespec tsi, tsf;
 
   for (;;) {
     clock_gettime(CLOCKTYPE, &tsi);
+    backtrace = 0;
     sudoku s;
     s.inserted = 0;
     for (int i = 0; i < N; i++) {
@@ -170,26 +288,45 @@ int main(int argc, char const *argv[]) {
     if (s.inserted == 0) {
       continue;
     }
-    printf("origin: ");
-    for (int i = 0; i < N * N; i++) {
-      printf("%d", s.box[i / 9][i % 9].number);
+
+    if (verbose) {
+      printw("hello");
+      print_sudoku(&s);
+      wclear(win);
+    } else {
+      printf("%s", "Origin: ");
+      print_sudoku_raw(&s);
     }
-    printf("\n");
+
     if (solve(&s)) {
-      printf("solved: ");
-      for (int i = 0; i < N * N; i++) {
-        printf("%d", s.box[i / 9][i % 9].number);
+      if (verbose) {
+        print_sudoku(&s);
+        wrefresh(win);
+        wprintw(infowin, "%s\n", "Solved!");
+      } else {
+        printf("%s", "Solved: ");
+        print_sudoku_raw(&s);
       }
     } else {
-      printf("%s\n", "No answer!");
+      wprintw(infowin, "%s\n", "No answer!");
     }
-    printf("\n");
 
     clock_gettime(CLOCKTYPE, &tsf);
     double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
     long elaps_ns  = tsf.tv_nsec - tsi.tv_nsec;
+    if (verbose) {
+      wprintw(infowin, "resolve cost CPU time: %lfs\n", elaps_s + ((double)elaps_ns) / 1.0e9);
+      wrefresh(infowin);
 
-    fprintf(stderr, "resolve cost CPU time: %lf\n", elaps_s + ((double)elaps_ns) / 1.0e9);
+      wclear(win);
+      wclear(infowin);
+
+      sleep(1);
+    } else {
+      printf("Backtrace: %d\n", backtrace);
+      printf("Resolve cost CPU time: %lfs\n\n", elaps_s + ((double)elaps_ns) / 1.0e9);
+    }
   }
+
   return 0;
 }
