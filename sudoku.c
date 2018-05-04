@@ -151,6 +151,8 @@ bool solve(sudoku *s) {
 }
 
 int main(int argc, char const *argv[]) {
+  printf("gcc version: %s\n", __VERSION__);
+
   struct timespec tsi, tsf;
 
   for (;;) {

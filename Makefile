@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Os -std=c11
+CFLAGS  = -Os -std=c99
 LDFLAGS = -D_POSIX_C_SOURCE=199309L
 Target  = $(shell basename $(abspath $(dir $$PWD)))
 

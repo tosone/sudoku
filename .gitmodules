@@ -1,0 +1,3 @@
+[submodule "3rdParty/ncurses"]
+	path = 3rdParty/ncurses
+	url = https://github.com/mirror/ncurses.git
