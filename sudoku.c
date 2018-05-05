@@ -1,5 +1,6 @@
 #include <curses.h>
 #include <getopt.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,15 +115,34 @@ void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites, 
   sudoku_get_rule_at(s, *row, *column, possibilites, poss_count);
 }
 
+void sleep_ms(int ms) {
+  struct timespec tim, tim2;
+  tim.tv_sec  = 0;
+  tim.tv_nsec = ms * 1000000L;
+  nanosleep(&tim, &tim2);
+}
+
+void *timeout_thread() {
+  sleep_ms(300);
+  exit(0);
+}
+
 void sudoku_input(sudoku *s) {
   s->inserted = 0;
   for (int i = 0; i < N * N; i++) {
     int row    = i / N;
     int column = i % N;
 
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, timeout_thread, NULL);
     auto char c = getchar();
+    pthread_cancel(thread_id);
+    if (c == '\n' || c == '\r') {
+      i--;
+      continue;
+    }
     if (c == -1) {
-      exit(0);
+      return;
     }
     if (c == 10) {
       break;
@@ -191,13 +211,6 @@ void print_sudoku_raw(sudoku *s) {
   printf("\n");
 }
 
-void sleep_ms(int ms) {
-  struct timespec tim, tim2;
-  tim.tv_sec  = 0;
-  tim.tv_nsec = ms * 1000000L;
-  nanosleep(&tim, &tim2);
-}
-
 bool solve(sudoku *s) {
   if (s->inserted == N * N) {
     return true;
@@ -225,7 +238,7 @@ bool solve(sudoku *s) {
     backtrace++;
     if (verbose) {
       wclear(infowin);
-      wprintw(infowin, "backtrace: %d", backtrace);
+      wprintw(infowin, "Backtrace: %d\n", backtrace);
       wrefresh(infowin);
     }
     sudoku_erase(s, row, column);
@@ -248,6 +261,8 @@ int main(int argc, char *argv[]) {
 
   if (verbose) {
     initscr();
+    cbreak();
+    noecho();
     atexit(cleanup);
     start_color();
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
@@ -257,7 +272,7 @@ int main(int argc, char *argv[]) {
 
     WINDOW *verwin = newwin(2, 37, 1, 3);
     win            = newwin(19, 37, 3, 3);
-    infowin        = newwin(2, 37, 23, 3);
+    infowin        = newwin(3, 37, 23, 3);
 
     refresh();
     wrefresh(verwin);
@@ -271,6 +286,8 @@ int main(int argc, char *argv[]) {
   }
 
   struct timespec tsi, tsf;
+
+  int try_read = 0;
 
   for (;;) {
     clock_gettime(CLOCKTYPE, &tsi);
@@ -286,11 +303,15 @@ int main(int argc, char *argv[]) {
     }
     sudoku_input(&s);
     if (s.inserted == 0) {
+      if (try_read == 3) {
+        getchar();
+        return 0;
+      }
+      try_read++;
       continue;
     }
 
     if (verbose) {
-      printw("hello");
       print_sudoku(&s);
       wclear(win);
     } else {
@@ -315,13 +336,13 @@ int main(int argc, char *argv[]) {
     double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
     long elaps_ns  = tsf.tv_nsec - tsi.tv_nsec;
     if (verbose) {
-      wprintw(infowin, "resolve cost CPU time: %lfs\n", elaps_s + ((double)elaps_ns) / 1.0e9);
+      wprintw(infowin, "Resolve cost CPU time: %lfs\n", elaps_s + ((double)elaps_ns) / 1.0e9);
       wrefresh(infowin);
 
       wclear(win);
       wclear(infowin);
 
-      sleep(1);
+      sleep(3);
     } else {
       printf("Backtrace: %d\n", backtrace);
       printf("Resolve cost CPU time: %lfs\n\n", elaps_s + ((double)elaps_ns) / 1.0e9);
