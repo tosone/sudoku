@@ -4,7 +4,8 @@ LDFLAGS = -D_POSIX_C_SOURCE=199309L -I./3rdParty/ncurses/include -L./3rdParty/nc
 Target  = $(shell basename $(abspath $(dir $$PWD)))
 
 all: clean
-	${CC} ${CFLAGS} ${LDFLAGS} -o ${Target}.test ${Target}.c -lncurses -lpthread
+	${CC} ${CFLAGS} ${LDFLAGS} -o ${Target}.test ${Target}.c -lncurses -lpthread -static
+	strip ${Target}.test
 
 clean:
 	${RM} *.test
