@@ -16,7 +16,7 @@ test:
 	cat puzzles.txt | ./$(TARGET).test
 
 verbose:
-	cat puzzles.txt | TERMINFO=$(PREFIX)/share/terminfo TERM=xterm-basic ./$(TARGET).test -v
+	cat puzzles.txt | TERMINFO=$(PREFIX)/share/terminfo ./$(TARGET).test -v
 
 app_name                := sudoku
 docker_name             := $(app_name)

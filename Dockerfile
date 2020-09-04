@@ -1,8 +1,8 @@
 FROM alpine:edge
 
-RUN sed -i 's/http:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
-  apk update && apk upgrade \
-  && apk add --no-cache build-base mdocml-apropos coreutils ca-certificates \
+RUN sed -i 's/https:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
+  apk update && apk upgrade && \
+  apk add --no-cache build-base coreutils ca-certificates \
   vim fish dialog tzdata ncurses-dev
 
 RUN sed -i "s/bin\/ash/usr\/bin\/fish/" /etc/passwd
