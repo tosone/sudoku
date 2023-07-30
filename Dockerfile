@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.4
+
 FROM alpine:3.15 as BUILD
 
 RUN sed -i 's/https:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
