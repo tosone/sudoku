@@ -1,6 +1,6 @@
-FROM alpine:3.15 as BUILD
+FROM alpine:3.18 as BUILD
 
-RUN sed -i 's/https:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
+RUN sed -i 's/https:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.aliyun.com/g' /etc/apk/repositories && \
   apk add --no-cache build-base ncurses-dev
 
 WORKDIR /sudoku
@@ -11,9 +11,9 @@ RUN make && cp sudoku.test puzzles.txt /tmp
 
 CMD ["/bin/sh"]
 
-FROM alpine:3.15
+FROM alpine:3.18
 
-RUN sed -i 's/https:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories && \
+RUN sed -i 's/https:\/\/dl-cdn.alpinelinux.org/https:\/\/mirrors.aliyun.com/g' /etc/apk/repositories && \
   apk add --no-cache ncurses
 
 COPY --from=BUILD /tmp/sudoku.test /usr/local/bin

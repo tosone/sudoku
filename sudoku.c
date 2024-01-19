@@ -73,7 +73,7 @@ void sudoku_set(sudoku *s, int row, int column, int val) {
   s->rule_column[s->sudoku_box[row][column].column][val] = 1;
 }
 
-void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites, int *poss_count) {
+void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilities, int *poss_count) {
   int rule_poss[N + 1] = {0};
   *poss_count          = 0;
   for (int rule = 0; rule < N + 1; rule++) {
@@ -93,18 +93,18 @@ void sudoku_get_rule_at(sudoku *s, int row, int column, int **possibilites, int 
   }
   for (int i = 1; i < N + 1; i++) {
     if (rule_poss[i] == 0) {
-      (*possibilites)[*poss_count] = i;
+      (*possibilities)[*poss_count] = i;
       (*poss_count)++;
     }
   }
 }
 
-void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites, int *poss_count) {
+void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilities, int *poss_count) {
   int min = N + 1;
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       if (s->sudoku_box[i][j].number == 0) {
-        sudoku_get_rule_at(s, i, j, possibilites, poss_count);
+        sudoku_get_rule_at(s, i, j, possibilities, poss_count);
         if (*poss_count < min) {
           min     = *poss_count;
           *row    = i;
@@ -113,7 +113,7 @@ void sudoku_get_most_poss(sudoku *s, int *row, int *column, int **possibilites, 
       }
     }
   }
-  sudoku_get_rule_at(s, *row, *column, possibilites, poss_count);
+  sudoku_get_rule_at(s, *row, *column, possibilities, poss_count);
 }
 
 void sleep_ms(int ms) {
@@ -334,10 +334,10 @@ int main(int argc, char *argv[]) {
     }
 
     clock_gettime(CLOCKTYPE, &tsf);
-    double elaps_s = difftime(tsf.tv_sec, tsi.tv_sec);
-    long elaps_ns  = tsf.tv_nsec - tsi.tv_nsec;
+    double elapsed_s = difftime(tsf.tv_sec, tsi.tv_sec);
+    long elapsed_ns  = tsf.tv_nsec - tsi.tv_nsec;
     if (verbose) {
-      wprintw(infowin, "Resolve cost CPU time: %lfs\n", elaps_s + ((double)elaps_ns) / 1.0e9);
+      wprintw(infowin, "Resolve cost CPU time: %lfs\n", elapsed_s + ((double)elapsed_ns) / 1.0e9);
       wrefresh(infowin);
 
       wclear(win);
@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
       sleep(3);
     } else {
       printf("Backtrace: %d\n", backtrace);
-      printf("Resolve cost CPU time: %lfs\n\n", elaps_s + ((double)elaps_ns) / 1.0e9);
+      printf("Resolve cost CPU time: %lfs\n\n", elapsed_s + ((double)elapsed_ns) / 1.0e9);
     }
   }
 
