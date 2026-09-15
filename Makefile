@@ -7,7 +7,7 @@ PREFIX  = $(shell pwd)/install
 
 .PHONY: all
 all: clean
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET).test $(TARGET).c -lncurses -lpthread
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET).test $(TARGET).c -lncurses
 	strip $(TARGET).test
 
 .PHONY: clean
